@@ -4,14 +4,15 @@ import type { APIResponse, Issue, Comment, IssueStatus } from "@/types";
 export const mapBackendCommentToFrontend = (backendComment: any): Comment => {
   return {
     id: String(backendComment.id),
-    issueId: String(backendComment.issue_id),
+    issueId: String(backendComment.issue_id || ""),
     author: {
-      id: String(backendComment.author_id),
+      id: String(backendComment.author_id || ""),
       name: backendComment.author_name || "Anonymous Citizen",
-      avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${backendComment.author_id}`,
+      avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${backendComment.author_id || "anon"}`,
     },
     text: backendComment.text,
     createdAt: backendComment.created_at || new Date().toISOString(),
+    isOwn: backendComment.is_own ?? false,
   };
 };
 
@@ -25,110 +26,82 @@ export const mapBackendIssueToFrontend = (backendIssue: any): Issue => {
     status: (backendIssue.status || "open").toLowerCase() as any,
     imageUrl: backendIssue.image_url || undefined,
     location: {
-      latitude: backendIssue.latitude,
-      longitude: backendIssue.longitude,
+      latitude: backendIssue.latitude ?? 22.7196,
+      longitude: backendIssue.longitude ?? 75.8577,
     },
     address: backendIssue.address || "Indore",
     distanceKm: backendIssue.distanceKm ?? 0.8,
     createdAt: backendIssue.created_at || new Date().toISOString(),
     upvotes: backendIssue.upvotes ?? 0,
     commentsCount: backendIssue.comments_count ?? 0,
-    reporter: backendIssue.reported_by ? {
-      id: String(backendIssue.reported_by),
-      name: "Citizen",
-      avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${backendIssue.reported_by}`,
-    } : null,
+    reporter: backendIssue.reported_by
+      ? {
+          id: String(backendIssue.reported_by),
+          name: backendIssue.reporter_name || "Citizen",
+          avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${backendIssue.reported_by}`,
+        }
+      : null,
     anonymous: backendIssue.anonymous ?? false,
+    aiCategory: backendIssue.ai_category,
+    aiSeverity: backendIssue.ai_severity,
+    aiDescription: backendIssue.ai_description,
+    duplicateOf: backendIssue.duplicate_of ?? null,
   };
 };
 
 export const issueService = {
-  list: (params?: { radiusKm?: number; category?: string; status?: string; q?: string }) =>
+  list: (params?: {
+    radiusKm?: number;
+    category?: string;
+    status?: string;
+    q?: string;
+    limit?: number;
+    skip?: number;
+  }) =>
     api.get<APIResponse<any[]>>("/issues", { params }).then((res) => {
       const mapped = (res.data.data || []).map(mapBackendIssueToFrontend);
-      return {
-        ...res,
-        data: {
-          ...res.data,
-          data: mapped,
-        },
-      };
+      return { ...res, data: { ...res.data, data: mapped } };
     }),
+
   get: (id: string) =>
     api.get<APIResponse<any>>(`/issues/${id}`).then((res) => {
       const mapped = mapBackendIssueToFrontend(res.data.data);
-      return {
-        ...res,
-        data: {
-          ...res.data,
-          data: mapped,
-        },
-      };
+      return { ...res, data: { ...res.data, data: mapped } };
     }),
-  create: (formData: FormData) => {
-    const title = formData.get("title") as string;
-    const description = formData.get("description") as string;
-    const category = formData.get("category") as string;
-    const latitude = parseFloat(formData.get("latitude") as string);
-    const longitude = parseFloat(formData.get("longitude") as string);
-    const hasImage = formData.has("image");
-    const image_url = hasImage
-      ? `https://images.unsplash.com/photo-1594913785162-e6785b423cb1?auto=format&fit=crop&q=80&w=600`
-      : undefined;
 
-    const payload = {
-      title,
-      description,
-      category,
-      latitude,
-      longitude,
-      image_url,
-    };
-
-    return api.post<APIResponse<any>>("/issues", payload).then((res) => {
+  create: (payload: {
+    title: string;
+    description: string;
+    category: string;
+    latitude: number;
+    longitude: number;
+    anonymous?: boolean;
+    image_url?: string;
+  }) =>
+    api.post<APIResponse<any>>("/issues", payload).then((res) => {
       const mapped = mapBackendIssueToFrontend(res.data.data);
-      return {
-        ...res,
-        data: {
-          ...res.data,
-          data: mapped,
-        },
-      };
-    });
-  },
+      return { ...res, data: { ...res.data, data: mapped } };
+    }),
+
   updateStatus: (id: string, status: IssueStatus) =>
     api.patch<APIResponse<any>>(`/issues/${id}`, { status }).then((res) => {
       const mapped = mapBackendIssueToFrontend(res.data.data);
-      return {
-        ...res,
-        data: {
-          ...res.data,
-          data: mapped,
-        },
-      };
+      return { ...res, data: { ...res.data, data: mapped } };
     }),
+
   comment: (issueId: string, text: string) =>
-    api.post<APIResponse<any>>(`/comments/${issueId}`, { text }).then((res) => {
+    api.post<APIResponse<any>>(`/comments/${issueId}`, { content: text }).then((res) => {
       const mapped = mapBackendCommentToFrontend(res.data.data);
-      return {
-        ...res,
-        data: {
-          ...res.data,
-          data: mapped,
-        },
-      };
+      return { ...res, data: { ...res.data, data: mapped } };
     }),
+
+
   comments: (issueId: string) =>
     api.get<APIResponse<any[]>>(`/comments/${issueId}`).then((res) => {
       const mapped = (res.data.data || []).map(mapBackendCommentToFrontend);
-      return {
-        ...res,
-        data: {
-          ...res.data,
-          data: mapped,
-        },
-      };
+      return { ...res, data: { ...res.data, data: mapped } };
     }),
+
   upvote: (issueId: string) =>
     api.post<APIResponse<any>>(`/issues/${issueId}/upvote`).then((res) => {
       const mapped = mapBackendIssueToFrontend(res.data.data);
@@ -136,25 +109,28 @@ export const issueService = {
         ...res,
         data: {
           ...res.data,
-          data: {
-            upvotes: mapped.upvotes,
-          },
+          data: { upvotes: mapped?.upvotes ?? 0 },
         },
       };
     }),
-  myReports: async () => {
-    const meRes = await api.get<APIResponse<any>>("/auth/me");
-    const userId = meRes.data.data.id;
-    const issuesRes = await api.get<APIResponse<any[]>>("/issues");
-    const mapped = (issuesRes.data.data || []).map(mapBackendIssueToFrontend);
-    const filtered = mapped.filter((i) => i.reporter?.id === String(userId));
-    return {
-      ...issuesRes,
-      data: {
-        ...issuesRes.data,
-        data: filtered,
-      },
-    };
-  },
+
+  myReports: () =>
+    api.get<APIResponse<any[]>>("/issues").then(async (res) => {
+      // Fetch current user ID from /auth/me to filter
+      let userId: string | null = null;
+      try {
+        const meRes = await api.get<APIResponse<any>>("/auth/me");
+        userId = String(meRes.data.data?.id || "");
+      } catch {
+        // If /me fails token is invalid — return empty
+        return { ...res, data: { ...res.data, data: [] } };
+      }
+      const all = (res.data.data || []).map(mapBackendIssueToFrontend);
+      const mine = userId
+        ? all.filter((i) => i.reporter?.id === userId)
+        : all;
+      return { ...res, data: { ...res.data, data: mine } };
+    }),
+
   delete: (id: string) => api.delete<APIResponse<null>>(`/issues/${id}`),
 };

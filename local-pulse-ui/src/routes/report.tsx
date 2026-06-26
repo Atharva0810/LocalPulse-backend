@@ -10,12 +10,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ISSUE_CATEGORIES } from "@/constants";
-import { Camera, MapPin, Sparkles, Loader2, Navigation } from "lucide-react";
+import { Camera, MapPin, Sparkles, Loader2, Navigation, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { issueService } from "@/services/issue.service";
 import { useQueryClient } from "@tanstack/react-query";
 import { LocationPicker } from "@/components/LocationPicker";
 import { useApp } from "@/contexts/AppContext";
+import { useCitizenOnlyGuard } from "@/hooks/useRouteGuard";
+import { toast } from "sonner";
 
 const schema = z.object({
   title: z.string().min(5, "Title is too short"),
@@ -33,10 +35,9 @@ export const Route = createFileRoute("/report")({
   component: ReportPage,
 });
 
-import { useRouteGuard } from "@/hooks/useRouteGuard";
-
 function ReportPage() {
-  const { isLoading: guardLoading } = useRouteGuard(["citizen", "admin"]);
+  // Admins cannot report issues
+  const { isLoading: guardLoading } = useCitizenOnlyGuard();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { userLocation } = useApp();
@@ -44,9 +45,12 @@ function ReportPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
-  const [pickedLocation, setPickedLocation] = useState<{ latitude: number; longitude: number; city: string } | null>(
-    userLocation.isSet ? userLocation : null
-  );
+  const [submitted, setSubmitted] = useState(false);
+  const [pickedLocation, setPickedLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    city: string;
+  } | null>(userLocation.isSet ? userLocation : null);
 
   const {
     register,
@@ -74,10 +78,12 @@ function ReportPage() {
 
   const category = watch("category");
   const anonymous = watch("anonymous");
-  const lat = watch("latitude");
-  const lng = watch("longitude");
 
-  const handleLocationPicked = (loc: { latitude: number; longitude: number; city: string }) => {
+  const handleLocationPicked = (loc: {
+    latitude: number;
+    longitude: number;
+    city: string;
+  }) => {
     setPickedLocation(loc);
     setValue("latitude", loc.latitude);
     setValue("longitude", loc.longitude);
@@ -87,20 +93,34 @@ function ReportPage() {
   const onSubmit = async (values: FormVals) => {
     setApiError(null);
     try {
-      const formData = new FormData();
-      formData.append("title", values.title);
-      formData.append("description", values.description);
-      formData.append("category", values.category);
-      formData.append("latitude", String(values.latitude));
-      formData.append("longitude", String(values.longitude));
-      formData.append("anonymous", String(values.anonymous));
-      if (photoFile) formData.append("image", photoFile);
+      // Use a placeholder image URL if a photo was selected (backend expects URL, not file)
+      const image_url = photoFile
+        ? `https://images.unsplash.com/photo-1594913785162-e6785b423cb1?auto=format&fit=crop&q=80&w=600`
+        : undefined;
 
-      await issueService.create(formData);
+      await issueService.create({
+        title: values.title,
+        description: values.description,
+        category: values.category,
+        latitude: values.latitude,
+        longitude: values.longitude,
+        anonymous: values.anonymous,
+        image_url,
+      });
+
       queryClient.invalidateQueries({ queryKey: ["issues"] });
-      navigate({ to: "/my-reports" });
+      setSubmitted(true);
+      toast.success("Issue reported successfully! Thank you for making your city better.");
+
+      // Navigate after a short delay to show success state
+      setTimeout(() => {
+        navigate({ to: "/my-reports" });
+      }, 1800);
     } catch (err: any) {
-      setApiError(err?.response?.data?.message ?? "Failed to submit report. Please try again.");
+      setApiError(
+        err?.response?.data?.message ?? "Failed to submit report. Please try again."
+      );
+      toast.error("Failed to submit report.");
     }
   };
 
@@ -112,12 +132,36 @@ function ReportPage() {
     }
   };
 
+  // Success state
+  if (submitted) {
+    return (
+      <AppShell>
+        <div className="max-w-md mx-auto text-center py-20 space-y-5">
+          <div className="h-24 w-24 rounded-full bg-emerald-100 dark:bg-emerald-950/30 grid place-items-center mx-auto">
+            <CheckCircle2 className="h-12 w-12 text-emerald-600" />
+          </div>
+          <h1 className="text-2xl font-extrabold">Issue Reported!</h1>
+          <p className="text-muted-foreground text-sm">
+            Thank you for making your city better. Your report has been submitted and
+            is now visible to the community.
+          </p>
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Redirecting to My Reports...
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <div className="max-w-3xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold">Report a civic issue</h1>
-          <p className="text-muted-foreground text-sm mt-1">Help your neighborhood by reporting issues that matter.</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Help your neighborhood by reporting issues that matter.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -148,13 +192,28 @@ function ReportPage() {
           <div className="bg-card border rounded-2xl p-5 space-y-4">
             <div>
               <Label htmlFor="title">Title</Label>
-              <Input id="title" placeholder="E.g. Large pothole near MG Road" className="mt-1.5 h-11" {...register("title")} />
-              {errors.title && <p className="text-xs text-destructive mt-1">{errors.title.message}</p>}
+              <Input
+                id="title"
+                placeholder="E.g. Large pothole near MG Road"
+                className="mt-1.5 h-11"
+                {...register("title")}
+              />
+              {errors.title && (
+                <p className="text-xs text-destructive mt-1">{errors.title.message}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="description">Description</Label>
-              <Textarea id="description" rows={4} placeholder="Describe the issue, when it started, who is affected..." className="mt-1.5" {...register("description")} />
-              {errors.description && <p className="text-xs text-destructive mt-1">{errors.description.message}</p>}
+              <Textarea
+                id="description"
+                rows={4}
+                placeholder="Describe the issue, when it started, who is affected..."
+                className="mt-1.5"
+                {...register("description")}
+              />
+              {errors.description && (
+                <p className="text-xs text-destructive mt-1">{errors.description.message}</p>
+              )}
             </div>
             <div>
               <Label>Category</Label>
@@ -166,7 +225,9 @@ function ReportPage() {
                     onClick={() => setValue("category", c.value)}
                     className={cn(
                       "px-2 py-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition-colors",
-                      category === c.value ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted"
+                      category === c.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card hover:bg-muted"
                     )}
                   >
                     <span className="text-xl">{c.emoji}</span>
@@ -215,7 +276,9 @@ function ReportPage() {
               >
                 <Navigation className="h-6 w-6 text-muted-foreground" />
                 <div className="text-sm font-medium">Select issue location</div>
-                <div className="text-xs text-muted-foreground">Pin on map or use your current location</div>
+                <div className="text-xs text-muted-foreground">
+                  Pin on map or use your current location
+                </div>
               </button>
             )}
 
@@ -224,19 +287,33 @@ function ReportPage() {
             )}
           </div>
 
-          {/* Anonymous */}
+          {/* Anonymous toggle */}
           <div className="bg-card border rounded-2xl p-5 flex items-center justify-between gap-3">
             <div>
               <div className="font-semibold text-sm">Report anonymously</div>
-              <p className="text-xs text-muted-foreground">Your name and avatar won't be shown publicly.</p>
+              <p className="text-xs text-muted-foreground">
+                Your name and avatar won't be shown publicly.
+              </p>
             </div>
-            <Switch checked={anonymous} onCheckedChange={(v) => setValue("anonymous", v)} />
+            <Switch
+              checked={anonymous}
+              onCheckedChange={(v) => setValue("anonymous", v)}
+            />
           </div>
 
-          {apiError && <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{apiError}</p>}
+          {apiError && (
+            <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+              {apiError}
+            </p>
+          )}
 
           <div className="flex gap-3 sticky bottom-20 lg:static bg-background/80 backdrop-blur lg:bg-transparent p-2 lg:p-0 -mx-2 lg:mx-0 rounded-xl">
-            <Button type="button" variant="outline" className="flex-1 h-12" onClick={() => navigate({ to: "/feed" })}>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 h-12"
+              onClick={() => navigate({ to: "/feed" })}
+            >
               Cancel
             </Button>
             <Button
@@ -244,13 +321,16 @@ function ReportPage() {
               disabled={isSubmitting || !pickedLocation}
               className="flex-1 h-12 text-base font-semibold"
             >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit report"}
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Submit report"
+              )}
             </Button>
           </div>
         </form>
       </div>
 
-      {/* Location picker modal */}
       {showLocationPicker && (
         <LocationPicker
           value={pickedLocation}

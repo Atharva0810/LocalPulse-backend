@@ -7,6 +7,7 @@ const styles: Record<IssueStatus, string> = {
   under_review: "bg-[color:var(--status-review)]/15 text-[color:var(--status-review)] border-[color:var(--status-review)]/20",
   in_progress: "bg-[color:var(--status-progress)]/10 text-[color:var(--status-progress)] border-[color:var(--status-progress)]/20",
   resolved: "bg-[color:var(--status-resolved)]/10 text-[color:var(--status-resolved)] border-[color:var(--status-resolved)]/20",
+  closed: "bg-muted text-muted-foreground border-muted-foreground/20",
 };
 
 export function StatusBadge({ status, className }: { status: IssueStatus; className?: string }) {

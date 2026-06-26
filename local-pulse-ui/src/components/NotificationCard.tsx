@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, CheckCircle2, Calendar, ArrowUp } from "lucide-react";
+import { Bell, MessageCircle, CheckCircle2, Calendar, ArrowUp, ShieldAlert, AtSign } from "lucide-react";
 import type { Notification } from "@/types";
 import { timeAgo } from "@/utils/format";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,10 @@ const iconMap = {
   new_event: Calendar,
   issue_resolved: CheckCircle2,
   new_upvotes: ArrowUp,
+  admin_alert: ShieldAlert,
+  mention: AtSign,
 } as const;
+
 
 export function NotificationCard({ notif, onClick }: { notif: Notification; onClick?: () => void }) {
   const Icon = iconMap[notif.type];

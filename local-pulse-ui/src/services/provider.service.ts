@@ -5,6 +5,7 @@ export const mapBackendProviderToFrontend = (backendProvider: any): Provider => 
   return {
     id: String(backendProvider.id),
     name: backendProvider.name,
+    photoUrl: backendProvider.photoUrl,
     category: backendProvider.category,
     rating: backendProvider.rating ?? 5.0,
     reviewsCount: backendProvider.reviewsCount ?? 0,
@@ -15,6 +16,7 @@ export const mapBackendProviderToFrontend = (backendProvider: any): Provider => 
     contact_email: backendProvider.contact_email,
     contact_phone: backendProvider.contact_phone,
     service_radius_km: backendProvider.service_radius_km,
+    is_active: backendProvider.is_active ?? true,
   };
 };
 
@@ -22,23 +24,26 @@ export const providerService = {
   list: (params?: { category?: string; radiusKm?: number; q?: string }) =>
     api.get<APIResponse<any[]>>("/providers", { params }).then((res) => {
       const mapped = (res.data.data || []).map(mapBackendProviderToFrontend);
-      return {
-        ...res,
-        data: {
-          ...res.data,
-          data: mapped,
-        },
-      };
+      return { ...res, data: { ...res.data, data: mapped } };
     }),
+
   get: (id: string) =>
     api.get<APIResponse<any>>(`/providers/${id}`).then((res) => {
       const mapped = mapBackendProviderToFrontend(res.data.data);
-      return {
-        ...res,
-        data: {
-          ...res.data,
-          data: mapped,
-        },
-      };
+      return { ...res, data: { ...res.data, data: mapped } };
+    }),
+
+  register: (payload: {
+    name: string;
+    category: string;
+    contact_email: string;
+    contact_phone: string;
+    service_radius_km: number;
+    latitude: number;
+    longitude: number;
+  }) =>
+    api.post<APIResponse<any>>("/providers/register", payload).then((res) => {
+      const mapped = mapBackendProviderToFrontend(res.data.data);
+      return { ...res, data: { ...res.data, data: mapped } };
     }),
 };

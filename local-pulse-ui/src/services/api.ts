@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = "https://localpulse-backend-b9lt.onrender.com/api/v1";
+const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 export const api = axios.create({
   baseURL,

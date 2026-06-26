@@ -57,3 +57,15 @@ async def get_me(current_user: dict = Depends(get_current_user)) -> JSONResponse
         message="Profile details fetched successfully.",
         data=user_data.model_dump(mode="json")
     )
+
+@router.post("/logout", response_class=JSONResponse)
+async def logout(current_user: dict = Depends(get_current_user)) -> JSONResponse:
+    """
+    Log out the user. Since JWT is stateless, this is a dummy endpoint
+    that confirms logout so the frontend can clear its token.
+    """
+    return standard_response(
+        success=True,
+        message="Logged out successfully."
+    )
+

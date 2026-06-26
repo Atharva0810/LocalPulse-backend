@@ -8,9 +8,9 @@ import { useApp } from "@/contexts/AppContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import api from "@/services/api";
+import { useRouteGuard } from "@/hooks/useRouteGuard";
+import { toast } from "sonner";
 
 const schema = z.object({
   name: z.string().min(2, "Name is too short"),
@@ -23,16 +23,21 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-import { useRouteGuard } from "@/hooks/useRouteGuard";
-
 function SettingsPage() {
-  const { isLoading: guardLoading, user } = useRouteGuard(["citizen", "provider", "authority", "admin"]);
+  const { isLoading: guardLoading, user } = useRouteGuard([
+    "citizen",
+    "provider",
+    "authority",
+    "admin",
+  ]);
   const { setUser } = useApp();
   const navigate = useNavigate();
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<z.infer<typeof schema>>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     values: {
       name: user?.name ?? "",
@@ -50,20 +55,13 @@ function SettingsPage() {
   }
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
-    setApiError(null);
-    setSaved(false);
     try {
-      // Simulate profile update locally since backend has no update profile route
-      const updatedUser = {
-        ...user,
-        name: values.name,
-        email: values.email,
-        city: values.city,
-      };
+      // Update user state locally (backend /auth/me update endpoint not available yet)
+      const updatedUser = { ...user, name: values.name, email: values.email, city: values.city };
       setUser(updatedUser);
-      setSaved(true);
-    } catch (err: any) {
-      setApiError(err?.response?.data?.message ?? "Failed to save changes. Please try again.");
+      toast.success("Profile updated successfully!");
+    } catch {
+      toast.error("Failed to save changes. Please try again.");
     }
   };
 
@@ -72,7 +70,9 @@ function SettingsPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold">Settings</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage your profile and preferences</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Manage your profile and preferences
+          </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -81,17 +81,23 @@ function SettingsPage() {
             <div>
               <Label htmlFor="name">Name</Label>
               <Input id="name" className="mt-1.5 h-11" {...register("name")} />
-              {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
+              {errors.name && (
+                <p className="text-xs text-destructive mt-1">{errors.name.message}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" className="mt-1.5 h-11" {...register("email")} />
-              {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
+              {errors.email && (
+                <p className="text-xs text-destructive mt-1">{errors.email.message}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="city">City</Label>
               <Input id="city" className="mt-1.5 h-11" {...register("city")} />
-              {errors.city && <p className="text-xs text-destructive mt-1">{errors.city.message}</p>}
+              {errors.city && (
+                <p className="text-xs text-destructive mt-1">{errors.city.message}</p>
+              )}
             </div>
           </div>
 
@@ -110,11 +116,13 @@ function SettingsPage() {
             ))}
           </div>
 
-          {apiError && <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{apiError}</p>}
-          {saved && <p className="text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2">Changes saved successfully.</p>}
-
           <div className="flex gap-3">
-            <Button type="button" variant="outline" className="flex-1 h-11" onClick={() => navigate({ to: "/profile" })}>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 h-11"
+              onClick={() => navigate({ to: "/profile" })}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting} className="flex-1 h-11">

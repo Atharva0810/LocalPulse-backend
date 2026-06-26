@@ -79,6 +79,35 @@ async def update_event(
         data=event.model_dump()
     )
 
+@router.patch("/{event_id}/approve", response_class=JSONResponse)
+async def approve_event(
+    event_id: str,
+    current_user: dict = Depends(get_current_user)
+) -> JSONResponse:
+    """Approve a pending event."""
+    from app.core.database import db_client
+    from bson import ObjectId
+    obj_id = ObjectId(event_id) if ObjectId.is_valid(event_id) else None
+    if not obj_id:
+        return standard_response(success=False, message="Event not found.", status_code=404)
+    await db_client.db.events.update_one({"_id": obj_id}, {"$set": {"status": "approved"}})
+    return standard_response(success=True, message="Event approved.")
+
+@router.patch("/{event_id}/reject", response_class=JSONResponse)
+async def reject_event(
+    event_id: str,
+    current_user: dict = Depends(get_current_user)
+) -> JSONResponse:
+    """Reject a pending event."""
+    from app.core.database import db_client
+    from bson import ObjectId
+    obj_id = ObjectId(event_id) if ObjectId.is_valid(event_id) else None
+    if not obj_id:
+        return standard_response(success=False, message="Event not found.", status_code=404)
+    await db_client.db.events.update_one({"_id": obj_id}, {"$set": {"status": "rejected"}})
+    return standard_response(success=True, message="Event rejected.")
+
+
 @router.post("/{event_id}/rsvp", response_class=JSONResponse)
 async def rsvp_event(
     event_id: str,

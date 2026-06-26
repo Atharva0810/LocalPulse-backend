@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2, Newspaper } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { IssueCard } from "@/components/IssueCard";
 import { SearchBar } from "@/components/SearchBar";
@@ -12,15 +13,12 @@ import { SkeletonCard } from "@/components/SkeletonCard";
 import { issueService } from "@/services/issue.service";
 import { useApp } from "@/contexts/AppContext";
 import { ISSUE_CATEGORIES } from "@/constants";
-import { Newspaper } from "lucide-react";
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 export const Route = createFileRoute("/feed")({
   head: () => ({ meta: [{ title: "Issue Feed — LocalPulse" }] }),
   component: FeedPage,
 });
-
-import { useRouteGuard } from "@/hooks/useRouteGuard";
-import { Loader2 } from "lucide-react";
 
 function FeedPage() {
   const { isLoading: guardLoading } = useRouteGuard(["citizen", "admin"]);
@@ -53,23 +51,37 @@ function FeedPage() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold">Community Issue Feed</h1>
-            <p className="text-muted-foreground text-sm mt-1">See what your neighbors are reporting</p>
+            <p className="text-muted-foreground text-sm mt-1">
+              See what your neighbors are reporting
+            </p>
           </div>
           <RadiusSelector />
         </div>
         <SearchBar value={q} onChange={setQ} placeholder="Search issues by title or area..." />
         <CategoryChips chips={ISSUE_CATEGORIES} value={cat} onChange={setCat} />
         {isError ? (
-          <EmptyState icon={Newspaper} title="Couldn't load issues" description="Please check your connection and try again." />
+          <EmptyState
+            icon={Newspaper}
+            title="Couldn't load issues"
+            description="Please check your connection and try again."
+          />
         ) : isLoading ? (
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : issues.length === 0 ? (
-          <EmptyState icon={Newspaper} title="No issues found" description="Try a different category or radius." />
+          <EmptyState
+            icon={Newspaper}
+            title="No issues found"
+            description="Try a different category or radius."
+          />
         ) : (
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {issues.map((i) => <IssueCard key={i.id} issue={i} />)}
+            {issues.map((i) => (
+              <IssueCard key={i.id} issue={i} />
+            ))}
           </div>
         )}
       </div>

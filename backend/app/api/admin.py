@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status, Query, HTTPException
 from fastapi.responses import JSONResponse
+from bson import ObjectId
+from app.core.database import db_client
 from app.core.dependencies import require_role
 from app.core.constants import UserRole
 from app.services.dashboard_service import DashboardService
@@ -25,6 +27,46 @@ async def get_system_stats() -> JSONResponse:
         message="System analytics loaded successfully.",
         data=stats
     )
+
+@router.get("/users", response_class=JSONResponse)
+async def get_users(limit: int = 50, skip: int = 0) -> JSONResponse:
+    """List all registered users."""
+    users_cursor = db_client.db.users.find().skip(skip).limit(limit)
+    users = []
+    async for u in users_cursor:
+        u["id"] = str(u.pop("_id"))
+        if "password" in u:
+            del u["password"]
+        users.append(u)
+    return standard_response(success=True, message="Users loaded.", data=users)
+
+@router.patch("/users/{user_id}/suspend", response_class=JSONResponse)
+async def suspend_user(user_id: str) -> JSONResponse:
+    """Suspend a user account."""
+    obj_id = ObjectId(user_id) if ObjectId.is_valid(user_id) else None
+    if not obj_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    await db_client.db.users.update_one({"_id": obj_id}, {"$set": {"is_active": False}})
+    return standard_response(success=True, message="User suspended successfully.")
+
+@router.patch("/users/{user_id}/activate", response_class=JSONResponse)
+async def activate_user(user_id: str) -> JSONResponse:
+    """Activate a suspended user account."""
+    obj_id = ObjectId(user_id) if ObjectId.is_valid(user_id) else None
+    if not obj_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    await db_client.db.users.update_one({"_id": obj_id}, {"$set": {"is_active": True}})
+    return standard_response(success=True, message="User activated successfully.")
+
+@router.delete("/users/{user_id}", response_class=JSONResponse)
+async def delete_user(user_id: str) -> JSONResponse:
+    """Delete a user account."""
+    obj_id = ObjectId(user_id) if ObjectId.is_valid(user_id) else None
+    if not obj_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    await db_client.db.users.delete_one({"_id": obj_id})
+    return standard_response(success=True, message="User deleted successfully.")
+
 
 @router.post("/moderate/comments/{comment_id}", response_class=JSONResponse)
 async def moderate_comment(

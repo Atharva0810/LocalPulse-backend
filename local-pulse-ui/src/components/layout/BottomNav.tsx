@@ -1,22 +1,37 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Newspaper, Calendar, Wrench, UserIcon, Plus } from "lucide-react";
+import { LayoutDashboard, Newspaper, Calendar, Wrench, Plus, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useApp } from "@/contexts/AppContext";
 
-const items = [
+const citizenItems = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard },
   { to: "/feed", label: "Feed", icon: Newspaper },
   { to: "/report", label: "", icon: Plus, action: true },
   { to: "/events", label: "Events", icon: Calendar },
-  { to: "/providers", label: "Services", icon: Wrench, mobileAlt: UserIcon },
+  { to: "/providers", label: "Services", icon: Wrench },
+];
+
+const adminItems = [
+  { to: "/admin", label: "Admin", icon: ShieldCheck, search: { tab: "summary" } },
+  { to: "/admin", label: "Reports", icon: Newspaper, search: { tab: "reports" } },
+  { to: "/admin", label: "Users", icon: LayoutDashboard, search: { tab: "users" } },
+  { to: "/admin", label: "Events", icon: Calendar, search: { tab: "events" } },
+  { to: "/admin", label: "Config", icon: Wrench, search: { tab: "config" } },
 ];
 
 export function BottomNav() {
+  const { user } = useApp();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const search = useRouterState({ select: (s) => s.location.search }) as any;
+
+  const isAdmin = user?.role === "admin";
+  const items = isAdmin ? adminItems : citizenItems;
+
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-background border-t pb-[env(safe-area-inset-bottom)]">
-      <ul className="grid grid-cols-5 h-16">
+      <ul className={cn("grid h-16", isAdmin ? "grid-cols-5" : "grid-cols-5")}>
         {items.map((it) => {
-          if (it.action) {
+          if (!isAdmin && (it as any).action) {
             return (
               <li key="report" className="grid place-items-center">
                 <Link
@@ -29,14 +44,17 @@ export function BottomNav() {
               </li>
             );
           }
-          const active = pathname === it.to;
+          const active = isAdmin
+            ? pathname === it.to && search.tab === (it as any).search?.tab
+            : pathname === it.to;
           return (
-            <li key={it.to}>
+            <li key={`${it.to}-${it.label}`}>
               <Link
                 to={it.to}
+                search={(it as any).search}
                 className={cn(
-                  "h-full flex flex-col items-center justify-center gap-0.5 text-[11px]",
-                  active ? "text-primary" : "text-muted-foreground",
+                  "h-full flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium",
+                  active ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <it.icon className="h-5 w-5" />
