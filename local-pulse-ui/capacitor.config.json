@@ -1,0 +1,12 @@
+{
+  "appId": "com.localpulse.app",
+  "appName": "LocalPulse",
+  "webDir": "dist",
+  "server": {
+    "url": "https://local-pulse-ui.vercel.app",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

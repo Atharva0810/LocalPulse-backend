@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LocalPulse</string>
+    <string name="title_activity_main">LocalPulse</string>
+    <string name="package_name">com.localpulse.app</string>
+    <string name="custom_url_scheme">com.localpulse.app</string>
+</resources>
