@@ -129,7 +129,7 @@ LocalPulse/
 
 ### Frontend
 
-> https://YOUR-FRONTEND-URL.vercel.app
+>[ https://local-pulse-backend.vercel.app
 
 ### Backend API
 
