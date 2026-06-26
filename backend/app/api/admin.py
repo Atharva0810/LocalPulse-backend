@@ -39,6 +39,18 @@ async def moderate_comment(
         message=f"Comment {comment_id} has been moderated. Action: {action}."
     )
 
+@router.get("/system-config", response_class=JSONResponse)
+async def get_system_config() -> JSONResponse:
+    """
+    Retrieve application-wide defaults and system parameters.
+    """
+    config = await SystemConfigService.get_config()
+    return standard_response(
+        success=True,
+        message="System configuration parameters loaded.",
+        data=config.model_dump(mode="json")
+    )
+
 @router.put("/system-config", response_class=JSONResponse)
 async def update_system_config(config_updates: SystemConfigUpdate) -> JSONResponse:
     """

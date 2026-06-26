@@ -21,20 +21,32 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # CORS Settings
-    # Expects JSON array string in environment, e.g. '["http://localhost:3000"]'
-    CORS_ORIGINS: Union[List[str], str] = []
+    CORS_ORIGINS: Union[List[str], str] = [
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ]
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, str) and v.startswith("["):
-            try:
-                return json.loads(v)
-            except Exception:
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if not v_stripped:
                 return []
-        return v
+            if v_stripped.startswith("[") and v_stripped.endswith("]"):
+                try:
+                    parsed = json.loads(v_stripped)
+                    if isinstance(parsed, list):
+                        return [str(item).strip() for item in parsed]
+                except Exception:
+                    pass
+            # Comma-separated fallback
+            return [i.strip() for i in v_stripped.split(",") if i.strip()]
+        elif isinstance(v, list):
+            return [str(item).strip() for item in v]
+        return []
 
     # JWT Security Settings
     SECRET_KEY: str = "super-secret-jwt-key-change-this-in-production"

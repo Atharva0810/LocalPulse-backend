@@ -1,0 +1,44 @@
+[33mcommit e96aa24a2be9814858a22d9648717cde3e424be4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Mitali <its.mitalijadhav06@gmail.com>
+Date:   Thu Jun 25 23:49:05 2026 +0530
+
+    Recreate commits without .env
+
+ backend/.env | 29 [32m+++++++++++++++++++++++++++++[m
+ 1 file changed, 29 insertions(+)
+
+[33mcommit abf7a53a5ff39f3ce9e60ffe4a644cbf421aba5b[m
+Author: Mitali <its.mitalijadhav06@gmail.com>
+Date:   Thu Jun 25 23:45:22 2026 +0530
+
+    Remove .env from repository
+
+ backend/.env | 29 [31m-----------------------------[m
+ 1 file changed, 29 deletions(-)
+
+[33mcommit d3bc8fb284ea6f98ace88d4fe977b9f9327f761d[m
+Author: Mitali <its.mitalijadhav06@gmail.com>
+Date:   Thu Jun 25 23:38:55 2026 +0530
+
+    fixed APIroutes
+
+ backend/.env | 29 [32m+++++++++++++++++++++++++++++[m
+ 1 file changed, 29 insertions(+)
+
+[33mcommit 1a670712c613f48b4b7b203ebba1953dba05dd2f[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: Mitali <its.mitalijadhav06@gmail.com>
+Date:   Thu Jun 25 22:44:48 2026 +0530
+
+    Remove secrets from repository
+
+ backend/.env | 29 [31m-----------------------------[m
+ 1 file changed, 29 deletions(-)
+
+[33mcommit eb1dbf6c9fc5fdfcfa60113e52743386fad39f9c[m
+Author: Mitali <its.mitalijadhav06@gmail.com>
+Date:   Thu Jun 25 16:09:12 2026 +0530
+
+    backend
+
+ backend/.env | 29 [32m+++++++++++++++++++++++++++++[m
+ 1 file changed, 29 insertions(+)

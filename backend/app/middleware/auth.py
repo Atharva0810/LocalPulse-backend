@@ -16,6 +16,9 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         request: Request, 
         call_next: RequestResponseEndpoint
     ) -> Response:
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         authorization: str = request.headers.get("Authorization", "")
         if authorization.startswith("Bearer "):
             logger.info(f"Incoming Bearer token request to: {request.url.path}")

@@ -23,11 +23,10 @@ class NotificationType(str, Enum):
     DIRECT_MESSAGE = "direct_message"
 
 class ProviderCategory(str, Enum):
-    INFRASTRUCTURE = "infrastructure"
-    WASTE_MANAGEMENT = "waste_management"
-    HEALTHCARE = "healthcare"
-    PUBLIC_SAFETY = "public_safety"
-    UTILITIES = "utilities"
-    ENVIRONMENT = "environment"
-    EDUCATION = "education"
+    PLUMBER = "plumber"
+    ELECTRICIAN = "electrician"
+    TUTOR = "tutor"
+    CARPENTER = "carpenter"
+    MECHANIC = "mechanic"
+    CLEANER = "cleaner"
     OTHER = "other"

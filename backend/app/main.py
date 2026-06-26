@@ -55,15 +55,14 @@ app = FastAPI(
 )
 
 # Configure CORS Middleware
-if settings.CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.CORS_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    logger.info(f"CORS origins configured: {settings.CORS_ORIGINS}")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+logger.info(f"CORS Origins: {settings.CORS_ORIGINS}")
 
 # Configure Custom Authentication Interceptor Middleware
 app.add_middleware(AuthenticationMiddleware)
